@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import sys
 import random
@@ -10,6 +11,8 @@ from itertools import cycle
 FPS = 30
 SCREENWIDTH  = 288
 SCREENHEIGHT = 512
+
+os.environ["SDL_VIDEODRIVER"] = 'dummy'
 
 pygame.init()
 FPSCLOCK = pygame.time.Clock()
