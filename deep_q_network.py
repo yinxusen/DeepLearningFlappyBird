@@ -9,6 +9,7 @@ import wrapped_flappy_bird as game
 import random
 import numpy as np
 from collections import deque
+import time
 
 GAME = 'bird' # the name of the game being played for log files
 ACTIONS = 2 # number of valid actions
@@ -20,6 +21,11 @@ INITIAL_EPSILON = 0.0001 # starting value of epsilon
 REPLAY_MEMORY = 50000 # number of previous transitions to remember
 BATCH = 32 # size of minibatch
 FRAME_PER_ACTION = 1
+
+OBSERVE = 10000
+EXPLORE = 3000000
+FINAL_EPSILON = 0.0001
+INITIAL_EPSILON = 0.1
 
 def weight_variable(shape):
     initial = tf.truncated_normal(shape, stddev = 0.01)
@@ -105,11 +111,11 @@ def trainNetwork(s, readout, h_fc1, sess):
     saver = tf.train.Saver()
     sess.run(tf.initialize_all_variables())
     checkpoint = tf.train.get_checkpoint_state("saved_networks")
-    if checkpoint and checkpoint.model_checkpoint_path:
-        saver.restore(sess, checkpoint.model_checkpoint_path)
-        print("Successfully loaded:", checkpoint.model_checkpoint_path)
-    else:
-        print("Could not find old network weights")
+    # if checkpoint and checkpoint.model_checkpoint_path:
+    #     saver.restore(sess, checkpoint.model_checkpoint_path)
+    #     print("Successfully loaded:", checkpoint.model_checkpoint_path)
+    # else:
+    #     print("Could not find old network weights")
 
     # start training
     epsilon = INITIAL_EPSILON
@@ -169,12 +175,14 @@ def trainNetwork(s, readout, h_fc1, sess):
                     y_batch.append(r_batch[i] + GAMMA * np.max(readout_j1_batch[i]))
 
             # perform gradient step
-            train_step.run(feed_dict = {
+            t0 = time.time()
+            _, loss = sess.run([train_step, cost], feed_dict = {
                 y : y_batch,
                 a : a_batch,
                 s : s_j_batch}
             )
-
+            t0_end = time.time()
+            print('loss: {}, time: {}'.format(loss, t0_end-t0))
         # update the old values
         s_t = s_t1
         t += 1
@@ -199,7 +207,7 @@ def trainNetwork(s, readout, h_fc1, sess):
         if t % 10000 <= 100:
             a_file.write(",".join([str(x) for x in readout_t]) + '\n')
             h_file.write(",".join([str(x) for x in h_fc1.eval(feed_dict={s:[s_t]})[0]]) + '\n')
-            cv2.imwrite("logs_tetris/frame" + str(t) + ".png", x_t1)
+            # cv2.imwrite("logs_tetris/frame" + str(t) + ".png", x_t1)
 
 def playGame():
     sess = tf.InteractiveSession()
